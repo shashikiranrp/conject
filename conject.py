@@ -27,10 +27,14 @@ class Component:
             raise AttributeError("no such attribute: " + str(name) + "!")
 
     def __str__(self):
-        result = ""
+        return self.__indent_str(0)
+
+    def __indent_str(self, spaces_count):
+        result = str(spaces_count) + "L+ Conject(\n"
+        SPACES = " " * spaces_count
         for (k,v) in self._attrs.iteritems():
-            result = result + ("%s = %s\n" % (k, str(v)))    
-        return result
+            result = result + (SPACES + "%s = %s\n" % (k, v.__indent_str(spaces_count + 1) if isinstance(v, Component) else str(v)))
+        return result + SPACES + ")"
 
     def __setitem__(self, k, v):
         self.__dict__['_attrs'][k] = v
@@ -39,10 +43,6 @@ class Component:
         newObj = Component()
         newObj.__dict__["_attrs"] = copy.copy(self._attrs)
         return newObj
-
-    def merge(self, **kwargs):
-        self._attrs.update(**kwargs)
-        return self
 
     def mergePath(self, otherComponent):
         for (key, val) in otherComponent._attrs.iteritems():
@@ -64,11 +64,11 @@ class Component:
             _comp.__setattr__(key, value)
         return _comp
 
-def autovivify(key, val):
+def __autovivify(key, val):
   if "." in key:
     (current_key, _, next_keys) = key.partition(".")
-    nl = autovivify(next_keys, val)
-    return Component.buildComponentWithValues({current_key : autovivify(next_keys, val)})
+    nl = __autovivify(next_keys, val)
+    return Component.buildComponentWithValues({current_key : __autovivify(next_keys, val)})
   else:
     if key == "":
       raise Exception("key is empty")
@@ -83,6 +83,6 @@ def conject(filePath):
               sys.stderr.write("ignoring invalid line: %s\n" % line)
               continue
             else:
-              comp.mergePath(autovivify(key, val))
+              comp.mergePath(__autovivify(key, val))
     return comp
 
