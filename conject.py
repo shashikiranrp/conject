@@ -11,11 +11,7 @@ class Component:
         try:
             return self._attrs[str(name)]
         except KeyError:
-            # return None if not found in the namespace and it is an arg request, so that we won't break the python contract of AttributeError
-            if name.startswith("arg_"):
-                return None
-            else:
-                raise AttributeError("no such attribute: " + str(name) + "!")
+            raise AttributeError("no such attribute: " + str(name) + "!")
 
     def __setattr__(self, name, value):
         self._attrs[str(name)] = value
