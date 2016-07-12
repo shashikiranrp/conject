@@ -40,13 +40,13 @@ class Component:
         newObj.__dict__["_attrs"] = copy.copy(self._attrs)
         return newObj
 
-    def mergePath(self, otherComponent):
+    def _mergePath(self, otherComponent):
         for (key, val) in otherComponent._attrs.iteritems():
           if key in self._attrs.keys():
             if isinstance(val, Component):
               if not isinstance(self._attrs[key], Component):
-                self._attrs[key] = Component.buildComponentWithValues({'_' : self._attrs[key]}) 
-              self._attrs[key].mergePath(val)
+                self._attrs[key] = Component._buildComponentWithValues({'_' : self._attrs[key]}) 
+              self._attrs[key]._mergePath(val)
             else:
               self._attrs[key]['_'] = str(val)
           else:
@@ -54,21 +54,22 @@ class Component:
         return
 
     @classmethod
-    def buildComponentWithValues(cls, kwargs):
+    def _buildComponentWithValues(cls, kwargs):
         _comp = Component()
         for (key, value) in kwargs.iteritems():
             _comp.__setattr__(key, value)
         return _comp
 
-def __autovivify(key, val):
-  if "." in key:
-    (current_key, _, next_keys) = key.partition(".")
-    nl = __autovivify(next_keys, val)
-    return Component.buildComponentWithValues({current_key : __autovivify(next_keys, val)})
-  else:
-    if key == "":
-      raise Exception("key is empty")
-    return Component.buildComponentWithValues({key: val})
+    @classmethod
+    def _autovivify(cls, key, val):
+        if "." in key:
+            (current_key, _, next_keys) = key.partition(".")
+            nl = cls._autovivify(next_keys, val)
+            return cls._buildComponentWithValues({current_key : cls._autovivify(next_keys, val)})
+        else:
+            if key == "":
+                raise Exception("key is empty")
+            return cls._buildComponentWithValues({key: val})
 
 def conject(filePath):
     comp = Component()
@@ -79,6 +80,6 @@ def conject(filePath):
               sys.stderr.write("ignoring invalid line: %s\n" % line)
               continue
             else:
-              comp.mergePath(__autovivify(key, val))
+              comp._mergePath(Component._autovivify(key, val))
     return comp
 
